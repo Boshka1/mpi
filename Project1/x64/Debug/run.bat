@@ -1,0 +1,1 @@
+mpiexec -np 4 project1.exe
