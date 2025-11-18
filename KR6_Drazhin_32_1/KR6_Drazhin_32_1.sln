@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.11.35327.3
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "KR6_Drazhin_32_1", "KR6_Drazhin_32_1\KR6_Drazhin_32_1.vcxproj", "{DFEB9763-D508-4D2F-A567-01DDEED4A72D}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{DFEB9763-D508-4D2F-A567-01DDEED4A72D}.Debug|x64.ActiveCfg = Debug|x64
+		{DFEB9763-D508-4D2F-A567-01DDEED4A72D}.Debug|x64.Build.0 = Debug|x64
+		{DFEB9763-D508-4D2F-A567-01DDEED4A72D}.Debug|x86.ActiveCfg = Debug|Win32
+		{DFEB9763-D508-4D2F-A567-01DDEED4A72D}.Debug|x86.Build.0 = Debug|Win32
+		{DFEB9763-D508-4D2F-A567-01DDEED4A72D}.Release|x64.ActiveCfg = Release|x64
+		{DFEB9763-D508-4D2F-A567-01DDEED4A72D}.Release|x64.Build.0 = Release|x64
+		{DFEB9763-D508-4D2F-A567-01DDEED4A72D}.Release|x86.ActiveCfg = Release|Win32
+		{DFEB9763-D508-4D2F-A567-01DDEED4A72D}.Release|x86.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {624B2709-0E24-4827-A3DD-F6289C150174}
+	EndGlobalSection
+EndGlobal
