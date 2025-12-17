@@ -514,3 +514,96 @@ int main() {
     getchar();
     return 0;
 }
+
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include <omp.h>
+
+const long long N = 100000000;
+
+double run_experiment(double* vec, long long n, int num_threads, double* norm_out)
+{
+    double sum_sq = 0.0;
+    double start_time, end_time;
+    long long i;
+
+    omp_set_num_threads(num_threads);
+
+    start_time = omp_get_wtime();
+
+    #pragma omp parallel for reduction(+:sum_sq)
+    for (i = 0; i < n; ++i) {
+        sum_sq += vec[i] * vec[i];
+    }
+
+    *norm_out = sqrt(sum_sq);
+
+    end_time = omp_get_wtime();
+
+    return end_time - start_time;
+}
+
+int main()
+{
+    double* vec;
+    int max_procs;
+    int threads_to_test[4];
+    int num_tests = 0;
+    long long i;
+    double time_seq = 0.0;
+    int t_idx;
+
+    max_procs = omp_get_num_procs();
+    printf("Detected logical processors: %d\n", max_procs);
+    printf("Vector size: %lld elements\n\n", N);
+
+    vec = (double*)malloc(N * sizeof(double));
+    if (!vec) {
+        printf("Memory allocation error\n");
+        return 1;
+    }
+
+    omp_set_num_threads(max_procs);
+    #pragma omp parallel for
+    for (i = 0; i < N; ++i) {
+        vec[i] = 1.0;
+    }
+
+    threads_to_test[num_tests++] = 1;
+
+    if (max_procs > 2)
+        threads_to_test[num_tests++] = max_procs / 2;
+
+    if (max_procs > 1)
+        threads_to_test[num_tests++] = max_procs;
+
+    threads_to_test[num_tests++] = max_procs * 2;
+
+    printf("%-10s %-15s %-15s %-20s\n",
+           "Threads", "Time (sec)", "Speedup", "Euclidean norm");
+    printf("---------------------------------------------------------------------\n");
+
+    for (t_idx = 0; t_idx < num_tests; t_idx++) {
+        int t = threads_to_test[t_idx];
+        double norm;
+
+        // прогрев
+        run_experiment(vec, N, t, &norm);
+
+        double time = run_experiment(vec, N, t, &norm);
+
+        if (t == 1)
+            time_seq = time;
+
+        double speedup = time_seq / time;
+
+        printf("%-10d %-15.4f %-15.4fx %-20.4f\n",
+               t, time, speedup, norm);
+    }
+
+    free(vec);
+    return 0;
+}
