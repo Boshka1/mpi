@@ -102,3 +102,86 @@ euclid.exe
 echo =================================
 
 pause
+
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include <omp.h>
+
+// Размер вектора (100 млн элементов ~ 800 МБ ОЗУ)
+#define N 100000000
+
+int main() {
+    // 1. Подготовка данных
+    printf("Инициализация вектора (%d элементов)...\n", N);
+    double* vector = (double*)malloc(N * sizeof(double));
+    if (vector == NULL) {
+        printf("Ошибка: не хватает памяти!\n");
+        return 1;
+    }
+
+    // Заполняем единицами
+    #pragma omp parallel for
+    for (long i = 0; i < N; i++) {
+        vector[i] = 1.0;
+    }
+
+    // Определяем количество доступных логических процессоров
+    int num_procs = omp_get_num_procs();
+    printf("Обнаружено логических процессоров: %d\n\n", num_procs);
+
+    // Массив сценариев: [1 поток, Половина ядер, Все ядра, Ядра * 2]
+    int threads_to_test[] = { 1, num_procs / 2, num_procs, num_procs * 2 };
+    // Если ядер мало (например 2), num_procs/2 даст 1, будет повтор. Исправим это визуально в таблице.
+    
+    int num_tests = 4;
+    double time_seq = 0.0; // Время последовательного выполнения (для расчета ускорения)
+
+    printf("| %-10s | %-12s | %-15s | %-10s |\n", "Потоки", "Время (сек)", "Результат", "Ускорение");
+    printf("|------------|--------------|-----------------|------------|\n");
+
+    // 2. Цикл по экспериментам
+    for (int i = 0; i < num_tests; i++) {
+        int threads = threads_to_test[i];
+        
+        // Пропускаем тест 0 потоков, если вдруг вышло деление
+        if (threads < 1) threads = 1; 
+
+        // !!! ГЛАВНАЯ КОМАНДА: Устанавливаем число потоков из кода !!!
+        omp_set_num_threads(threads);
+
+        double start_time = omp_get_wtime();
+        double sum_squares = 0.0;
+
+        // Вычисления (Ядро программы)
+        #pragma omp parallel for reduction(+:sum_squares)
+        for (long j = 0; j < N; j++) {
+            sum_squares += vector[j] * vector[j];
+        }
+        double result = sqrt(sum_squares);
+
+        double end_time = omp_get_wtime();
+        double time_taken = end_time - start_time;
+
+        // Расчет ускорения
+        double speedup = 0.0;
+        if (i == 0) {
+            time_seq = time_taken; // Запоминаем время 1 потока как базовое
+            speedup = 1.0;
+        } else {
+            speedup = time_seq / time_taken;
+        }
+
+        // Вывод строки таблицы
+        printf("| %-10d | %-12f | %-15f | %-10.2f |\n", threads, time_taken, result, speedup);
+    }
+    printf("|------------|--------------|-----------------|------------|\n");
+
+    free(vector);
+    
+    // Чтобы консоль не закрылась сразу (для Windows)
+    system("pause");
+    return 0;
+}
