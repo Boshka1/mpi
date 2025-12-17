@@ -185,3 +185,126 @@ int main() {
     system("pause");
     return 0;
 }
+
+
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include <omp.h>
+
+// Размер вектора: 100 млн элементов
+// Используем long long для индексации больших массивов
+const long long N = 100000000;
+
+// Функция для проведения одного эксперимента
+double run_experiment(double* vec, long long n, int num_threads) {
+    double sum_sq = 0.0;
+    double start_time, end_time;
+    long long i;
+
+    // Устанавливаем заданное количество потоков
+    omp_set_num_threads(num_threads);
+
+    start_time = omp_get_wtime();
+
+    // Параллельная секция с редукцией
+    #pragma omp parallel for reduction(+:sum_sq)
+    for (i = 0; i < n; ++i) {
+        sum_sq += vec[i] * vec[i];
+    }
+
+    // Вычисляем корень (сама норма)
+    // Переменная volatile используется, чтобы оптимизатор не удалил вычисления,
+    // так как результат norm дальше не используется
+    volatile double norm = sqrt(sum_sq);
+
+    end_time = omp_get_wtime();
+
+    return end_time - start_time;
+}
+
+int main() {
+    double* vec;
+    int max_procs;
+    int threads_to_test[4];
+    int num_tests = 0;
+    long long i;
+    double time_seq = 0.0; // Время выполнения на 1 потоке
+    int t_idx;
+
+    // 1. Определение характеристик системы
+    max_procs = omp_get_num_procs();
+    printf("Detected logical processors: %d\n", max_procs);
+    printf("Vector size: %lld elements\n", N);
+    
+    // 2. Выделение памяти
+    printf("Allocating memory (approx %.2f MB)...\n", (double)N * sizeof(double) / 1024.0 / 1024.0);
+    vec = (double*)malloc(N * sizeof(double));
+    
+    if (vec == NULL) {
+        printf("Error: Memory allocation failed!\n");
+        return 1;
+    }
+
+    // 3. Заполнение массива (параллельно для ускорения запуска)
+    printf("Initializing data...\n");
+    omp_set_num_threads(max_procs);
+    #pragma omp parallel for
+    for (i = 0; i < N; ++i) {
+        // Заполняем простыми значениями
+        vec[i] = sin(i * 0.1) * 0.5 + 1.0; 
+    }
+
+    // 4. Формирование сценариев тестирования
+    // Сценарий 1: 1 поток (последовательно)
+    threads_to_test[num_tests++] = 1;
+    
+    // Сценарий 2: Половина ядер (если их больше 2)
+    if (max_procs > 2) {
+        threads_to_test[num_tests++] = max_procs / 2;
+    }
+    
+    // Сценарий 3: Ровно столько, сколько ядер
+    if (max_procs > 1) { // Чтобы не дублировать 1, если ядро всего одно
+        threads_to_test[num_tests++] = max_procs;
+    }
+    
+    // Сценарий 4: В два раза больше ядер (гиперпоточность / перегрузка)
+    threads_to_test[num_tests++] = max_procs * 2;
+
+    printf("Data ready. Starting automated benchmarks...\n\n");
+
+    // Шапка таблицы
+    printf("%-15s %-15s %-15s\n", "Threads", "Time (sec)", "Speedup");
+    printf("---------------------------------------------\n");
+
+    // 5. Цикл экспериментов
+    for (t_idx = 0; t_idx < num_tests; t_idx++) {
+        int t = threads_to_test[t_idx];
+        
+        // "Прогрев" (warm-up run) - чтобы кэш процессора заполнился данными
+        run_experiment(vec, N, t);
+
+        // Основной замер
+        double time = run_experiment(vec, N, t);
+
+        // Если это однопоточный запуск, запоминаем время как эталон
+        if (t == 1) {
+            time_seq = time;
+        }
+
+        double speedup = time_seq / time;
+
+        // Вывод строки таблицы
+        printf("%-15d %-15.4f %-15.4fx\n", t, time, speedup);
+    }
+
+    // Освобождение памяти
+    free(vec);
+
+    printf("\nDone. Press Enter to exit.");
+    getchar(); // Ждем нажатия Enter
+    return 0;
+}
