@@ -358,3 +358,71 @@ int main() {
     getchar(); // Пауза перед выходом
     return 0;
 }
+
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include <omp.h>
+
+double euclid_norm(double *x, int N)
+{
+    double sum = 0.0;
+
+    #pragma omp parallel for reduction(+:sum)
+    for (int i = 0; i < N; i++) {
+        sum += x[i] * x[i];
+    }
+
+    return sqrt(sum);
+}
+
+int main()
+{
+    int N = 100000000;   // размер вектора
+    double *x;
+    double start, end, time;
+    int max_threads;
+    double base_time = 0.0;
+
+    x = (double *)malloc(N * sizeof(double));
+    if (!x) {
+        printf("Ошибка выделения памяти\n");
+        return 1;
+    }
+
+    // Инициализация
+    for (int i = 0; i < N; i++) {
+        x[i] = 1.0;
+    }
+
+    max_threads = omp_get_num_procs();
+
+    printf("Число вычислительных элементов: %d\n", max_threads);
+    printf("Размер вектора: %d\n\n", N);
+
+    printf("| Потоки | Время (с) | Ускорение |\n");
+    printf("|--------|-----------|-----------|\n");
+
+    // Перебор количества потоков
+    for (int threads = 1; threads <= max_threads * 2; threads *= 2) {
+
+        omp_set_num_threads(threads);
+
+        start = omp_get_wtime();
+        euclid_norm(x, N);
+        end = omp_get_wtime();
+
+        time = end - start;
+
+        if (threads == 1)
+            base_time = time;
+
+        printf("| %6d | %9.5f | %9.3f |\n",
+               threads, time, base_time / time);
+    }
+
+    free(x);
+    return 0;
+}
