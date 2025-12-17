@@ -74,3 +74,31 @@ set OMP_NUM_THREADS=8
 euclid.exe
 
 pause
+
+@echo off
+echo --- Compiling with MSVC ---
+cl /openmp /nologo euclid.c
+REM Если ошибка компиляции, попробуйте: cl /openmp /nologo euclid.cpp
+
+echo.
+echo =================================
+echo TEST 1: 1 Thread (Serial)
+set OMP_NUM_THREADS=1
+euclid.exe
+echo =================================
+
+echo.
+echo =================================
+echo TEST 2: 4 Threads
+set OMP_NUM_THREADS=4
+euclid.exe
+echo =================================
+
+echo.
+echo =================================
+echo TEST 3: 8 Threads
+set OMP_NUM_THREADS=8
+euclid.exe
+echo =================================
+
+pause
