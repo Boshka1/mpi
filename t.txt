@@ -308,3 +308,53 @@ int main() {
     getchar(); // Ждем нажатия Enter
     return 0;
 }
+
+
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include <omp.h>
+
+int main() {
+    long long N = 100000000; // 100 млн элементов
+    double *vec = (double*)malloc(N * sizeof(double));
+    
+    // Инициализация вектора
+    #pragma omp parallel for
+    for (long long i = 0; i < N; i++) vec[i] = 1.0;
+
+    // Сценарии: 1 поток, < ядер (6), = ядрам (12), > ядер (24)
+    int threads_list[] = {1, 6, 12, 24}; 
+    double time_seq = 0.0;
+
+    printf("Threads\t Time (sec)\t Speedup\n");
+    printf("--------------------------------\n");
+
+    for (int k = 0; k < 4; k++) {
+        int t = threads_list[k];
+        double sum = 0.0;
+
+        omp_set_num_threads(t);
+        double start = omp_get_wtime();
+
+        // Главное вычисление: Эвклидова норма
+        #pragma omp parallel for reduction(+:sum)
+        for (long long i = 0; i < N; i++) {
+            sum += vec[i] * vec[i];
+        }
+        double norm = sqrt(sum); // Результат (чтобы компилятор не выкинул код)
+
+        double time = omp_get_wtime() - start;
+
+        // Сохраняем время 1 потока для расчета ускорения
+        if (t == 1) time_seq = time;
+
+        printf("%d\t %.4f\t %.4fx\n", t, time, time_seq / time);
+    }
+
+    free(vec);
+    getchar(); // Пауза перед выходом
+    return 0;
+}
