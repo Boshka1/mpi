@@ -51,3 +51,26 @@ int main(int argc, char *argv[]) {
 
     return 0;
 }
+
+
+
+@echo off
+echo Compiling...
+gcc -fopenmp euclid.c -o euclid.exe
+
+echo.
+echo --- TEST 1: 1 Thread ---
+set OMP_NUM_THREADS=1
+euclid.exe
+
+echo.
+echo --- TEST 2: 4 Threads ---
+set OMP_NUM_THREADS=4
+euclid.exe
+
+echo.
+echo --- TEST 3: 8 Threads ---
+set OMP_NUM_THREADS=8
+euclid.exe
+
+pause
