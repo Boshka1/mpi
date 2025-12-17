@@ -1,0 +1,53 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include <omp.h>   // Подключение библиотеки OpenMP
+
+int main(int argc, char *argv[]) {
+    // Размер вектора. Берем 100 млн элементов, чтобы вычисления заняли заметное время
+    long N = 100000000; 
+    
+    // Выделяем память под массив (в куче, так как массив большой ~800 МБ)
+    double *vector = (double*)malloc(N * sizeof(double));
+    if (vector == NULL) {
+        printf("Ошибка выделения памяти!\n");
+        return 1;
+    }
+
+    // Инициализация вектора (заполняем единицами)
+    // Это тоже можно распараллелить, но нас интересует замер времени именно вычисления нормы
+    #pragma omp parallel for
+    for (long i = 0; i < N; i++) {
+        vector[i] = 1.0;
+    }
+
+    double sum_squares = 0.0; // Переменная для накопления суммы квадратов
+    double start_time, end_time;
+
+    printf("Начало вычислений с использованием %d потоков...\n", omp_get_max_threads());
+
+    // Засекаем время
+    start_time = omp_get_wtime();
+
+    // ПАРАЛЛЕЛЬНАЯ ОБЛАСТЬ
+    // #pragma omp parallel for - указывает, что цикл for нужно разделить между потоками
+    // reduction(+:sum_squares) - критически важная часть (объяснение ниже)
+    #pragma omp parallel for reduction(+:sum_squares)
+    for (long i = 0; i < N; i++) {
+        sum_squares += vector[i] * vector[i];
+    }
+
+    // Вычисляем корень из суммы квадратов
+    double result = sqrt(sum_squares);
+
+    // Останавливаем время
+    end_time = omp_get_wtime();
+
+    printf("Результат (Эвклидова норма): %f\n", result);
+    printf("Затраченное время: %f секунд\n", end_time - start_time);
+
+    // Освобождаем память
+    free(vector);
+
+    return 0;
+}
